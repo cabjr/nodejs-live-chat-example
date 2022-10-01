@@ -1,0 +1,20 @@
+node_modules
+# Keep environment variables out of version control
+.env
+firestore-svc.json
+actions-secret.json
+prd-actions.json
+
+docs/deployment.log
+docs/openapi-gke-backend.yaml
+docs/actions-secret.json
+
+secrets-init/.env
+secrets-init/.env.build
+
+__tests__/coverage
+
+pg_volume/*
+dist/*
+*.pgdump
+.db
