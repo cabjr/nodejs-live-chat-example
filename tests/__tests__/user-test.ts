@@ -5,7 +5,10 @@ test('should create new user ', async () => {
   const user = {
     id: 1,
     name: 'Carlos',
-    email: 'carlos@prisma.io'
+    email: 'carlos@prisma.io',
+    password: '123456',
+    createdAt: new Date(Date.now()),
+    modifiedAt: new Date(Date.now())
   }
 
   prismaMock.user.create.mockResolvedValue(user)
@@ -13,7 +16,8 @@ test('should create new user ', async () => {
   await expect(createUser(user)).resolves.toEqual({
     id: 1,
     name: 'Carlos',
-    email: 'carlos@prisma.io'
+    email: 'carlos@prisma.io',
+    password: '123456'
   })
 })
 
@@ -22,6 +26,9 @@ test('should update a users name ', async () => {
     id: 1,
     name: 'Caarlos',
     email: 'carlos@prisma.io',
+    password: '123456',
+    createdAt: new Date(Date.now()),
+    modifiedAt: new Date(Date.now())
   }
 
   prismaMock.user.update.mockResolvedValue(user)
@@ -30,5 +37,8 @@ test('should update a users name ', async () => {
     id: 1,
     name: 'Caarlos',
     email: 'carlos@prisma.io',
+    password: '123456',
+    createdAt: new Date(Date.now()),
+    modifiedAt: new Date(Date.now())
   })
 })
