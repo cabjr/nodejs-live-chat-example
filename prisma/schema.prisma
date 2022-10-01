@@ -18,8 +18,8 @@ model User {
   password String 
   channels Channel[]
   messages Message[]
-  createdAt DateTime
-  modifiedAt DateTime
+  createdAt DateTime @default (now())
+  modifiedAt DateTime @default (now())
 }
 
 
@@ -29,7 +29,7 @@ model Channel {
   public Boolean @default(true)
   author    User    @relation(fields: [authorId], references: [id])
   authorId  Int
-  createdAt DateTime 
+  createdAt DateTime @default (now())
   messages Message[]
 }
 
@@ -40,5 +40,5 @@ model Message {
   authorId   Int
   channel Channel @relation(fields: [channelId], references: [id])
   channelId   Int
-  publishedAt DateTime
+  publishedAt DateTime @default (now())
 }
