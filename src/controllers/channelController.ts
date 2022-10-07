@@ -46,7 +46,7 @@ const channelMessages = async (req: Request, res: Response) => {
         if (channelName !== null) {
             const channel = await prisma.channel.findFirst({ where: { title: { equals: channelName } } })
             if (channel) {
-                const messages = await prisma.message.findMany({ where: { channelId: { equals: channel.id } }, orderBy: { publishedAt: "asc" }, include: {author: true}})
+                const messages = await prisma.message.findMany({ where: { channelId: { equals: channel.id } }, orderBy: { publishedAt: "asc" }, select: { publishedAt: true, message: true, author: {select: { id: true, name: true}}}})
                 return res.status(201).json(messages);
             } else {
                 return res.status(500).json(`Failed to fetch channel`);
