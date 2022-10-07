@@ -1,4 +1,5 @@
 import userRouter from './routes/users.routes';
+import channelRouter from './routes/channels.routes';
 
 
 export default (app: any) => {
@@ -6,5 +7,9 @@ export default (app: any) => {
         '/users',
         userRouter
       );
+      app.use(
+        '/channels',
+        channelRouter
+      )
 };
 

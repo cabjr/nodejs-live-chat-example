@@ -9,8 +9,8 @@ export function requireJwtMiddleware(request: Request, response: Response, next:
         message: message
     });
 
-    const requestHeader = "X-JWT-Token";
-    const responseHeader = "X-Renewed-JWT-Token";
+    const requestHeader = "token";
+    const responseHeader = "renewedToken";
     const header = request.header(requestHeader);
     
     if (!header) {
