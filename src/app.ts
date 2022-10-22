@@ -26,22 +26,19 @@ server.use(bodyParser.json({ limit: '8mb' }));
 server.use(bodyParser.urlencoded({ extended: true }));
 
 const ads = [{ message: 'Backend is up and running!' }];
+
 server.get('/', (req: Request, res: Response) => {
   res.send(ads);
 });
 
-server.listen(port, () => {
-  console.log(`[server]: Server is running at ${port}`);
-});
-
 const httpServer = http.createServer(server);
 
-const wss = new Websocket.Server({server: httpServer, path: "/ws"});
+const webSocketServer = new Websocket.Server({server: httpServer, path: '/ws'});
 
-wss.on('connection', (ws: WebSocket) => {
+webSocketServer.on('connection', (ws: WebSocket) => {
 
   //connection is up, let's add a simple simple event
-  wss.on('message', (message: string) => {
+  ws.on('message', (message: string) => {
 
       //log the received message and send it back to the client
       console.log('received: %s', message);
@@ -52,6 +49,13 @@ wss.on('connection', (ws: WebSocket) => {
   ws.send('Hi there, I am a WebSocket server');
 });
 
+
+
 server.use('/', apiRouter);
+
+httpServer.listen(port, () => {
+  console.log(`[server]: Server is running at ${port}`);
+});
+
 
 export default server
