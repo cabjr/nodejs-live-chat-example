@@ -1,6 +1,9 @@
 import express from 'express'
 import { Router, Request, Response } from 'express';
 import bodyParser from 'body-parser';
+import * as Websocket from 'ws';
+import * as http from 'http';
+import apiRouter from './router';
 
 const server = express();
 
@@ -30,5 +33,25 @@ server.get('/', (req: Request, res: Response) => {
 server.listen(port, () => {
   console.log(`[server]: Server is running at ${port}`);
 });
+
+const httpServer = http.createServer(server);
+
+const wss = new Websocket.Server({server: httpServer, path: "/ws"});
+
+wss.on('connection', (ws: WebSocket) => {
+
+  //connection is up, let's add a simple simple event
+  wss.on('message', (message: string) => {
+
+      //log the received message and send it back to the client
+      console.log('received: %s', message);
+      ws.send(`Hello, you sent -> ${message}`);
+  });
+
+  //send immediatly a feedback to the incoming connection    
+  ws.send('Hi there, I am a WebSocket server');
+});
+
+server.use('/', apiRouter);
 
 export default server

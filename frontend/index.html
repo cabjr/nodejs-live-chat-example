@@ -232,7 +232,7 @@
         }
 
         function newChannelItem(name, id) {
-            return `<li><a href="#" id="channel_${id}" onclick="selectChannel('${name}');">${name}</a></li>`
+            return `<li><a href="#" id="channel_${id}" onclick="selectChannel('${name}', true);">${name}</a></li>`
         }
 
         function createMessage(author, message, publishedAt) {
