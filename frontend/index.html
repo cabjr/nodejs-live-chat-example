@@ -102,34 +102,37 @@
     </div>
 
 
-    <div style="display: none;" id="chat" class="container text-center" >
+    <div style="display: none;" id="chat" class="container text-center">
         <div class="row align-items-start">
             <div class="row">
                 <div class="col-2">Channel List
                     <div>
-                        <ul>
+                        <ul id="ulChannelList">
                             <li>
-                                <a href="#">Default</a>
-
+                                <a href="#" id="channel_" onclick="selectChannel();">Default</a>
                             </li>
                         </ul>
                     </div>
                 </div>
                 <div class="col-10">
-                    <label for="exampleFormControlTextarea1" class="form-label">Channel Messages </label>
-                    <textarea class="form-control" id="exampleFormControlTextarea1" rows="20"></textarea>
+                    <label for="messagesPanel" class="form-label">Channel Messages </label>
+                    <textarea class="form-control" id="messagesPanel" disabled rows="20"></textarea>
                 </div>
             </div>
             <p></p>
             <div class="row">
-                <div class="col-2"></div>
-                    <div class="col-9">
-                        <input type="email" class="form-control" id="exampleFormControlInput1"
-                            placeholder="Write your message">
-                    </div>
-                    <div class="col-1">
-                        <button class="btn btn-primary">Send</button>
-                    </div>
+                <div class="col-2">
+                    <button onclick="connectAudio()">Audio</button>
+                    <button style="background-color: red">Mute</button>
+                    <p>Status: <div>Disconnected</div></p>
+                    
+                </div>
+                <div class="col-9">
+                    <input type="email" class="form-control" id="messageInput" placeholder="Write your message">
+                </div>
+                <div class="col-1">
+                    <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+                </div>
             </div>
 
         </div>
@@ -139,6 +142,9 @@
 
     <script>
         let jwtToken = '';
+        let lastMessageId = 0;
+        let channel = '';
+        let ws = null;
 
         function register() {
             const email = document.getElementById("email").value;
@@ -219,6 +225,7 @@
                             document.getElementById("login-call").style.display = "none";
                             document.getElementById("register-call").style.display = "none";
                             document.getElementById("chat").style.display = "block";
+                            setTimeout(fetchChannels(), 1000);
                         } else if (xhr.status === 403) {
                             Toastify({
                                 text: "Credentials incorrect",
@@ -229,6 +236,184 @@
                     }
                 });
             }
+        }
+
+        function newChannelItem(name, id) {
+            return `<li><a href="#" id="channel_${id}" onclick="selectChannel('${name}', true);">${name}</a></li>`
+        }
+
+        function createMessage(author, message, publishedAt) {
+            return `\n${author} (${publishedAt}): ${message}`
+        }
+
+        function fillMessagePanel(messages) {
+            console.log(messages);
+            const filteredMessages = messages.filter((message) => {
+                if (message.id > lastMessageId) {
+                    console.log(message);
+                    return message;
+                }
+            });
+            let allMessages = '';
+            for (message of filteredMessages) {
+                allMessages += createMessage(message.author.name, message.message, message.publishedAt);
+                lastMessageId = message.id
+            }
+            console.log(allMessages);
+            document.getElementById("messagesPanel").value = allMessages;
+        }
+
+        function selectChannel(name, popMessage) {
+            let xhr = new XMLHttpRequest();
+            channel = name;
+            lastMessageId = 0;
+            console.log("Channel selected: " + name);
+            xhr.open("GET", `http://localhost:9000/channels/messages/${name}`);
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.setRequestHeader("token", jwtToken);
+            xhr.send();
+            let channelSelected = false;
+            xhr.addEventListener('readystatechange', function () {
+                if (channelSelected === false && xhr.responseText) {
+                    if (xhr.status === 200) {
+                        const jsonResponse = JSON.parse(xhr.responseText);
+                        console.log(jsonResponse);
+                        fillMessagePanel(jsonResponse);
+                        if (popMessage) {
+
+                            Toastify({
+                                text: "Channel messages updated"
+                            }).showToast();
+                        }
+                        channelSelected = true;
+                    } else if (xhr.status === 403) {
+                        Toastify({
+                            text: "Credentials incorrect",
+                            className: "error"
+                        }).showToast();
+                        channelSelected = true;
+                    }
+                    //setTimeout(selectChannel(channel), 1500);
+                }
+            });
+
+        }
+
+        function fetchChannels() {
+            let xhr = new XMLHttpRequest();
+            xhr.open("GET", "http://localhost:9000/channels/");
+            xhr.setRequestHeader("token", jwtToken);
+            xhr.send();
+            let channelsUpdated = false;
+            xhr.addEventListener('readystatechange', function () {
+                if (channelsUpdated === false && xhr.responseText) {
+                    if (xhr.status === 200) {
+                        console.log(xhr.status);
+                        const jsonResponse = JSON.parse(xhr.responseText);
+                        console.log(jsonResponse);
+                        let newChannelList = '';
+                        for (channel of jsonResponse) {
+                            newChannelList += newChannelItem(channel.title, channel.id);
+                        }
+                        document.getElementById("ulChannelList").innerHTML = newChannelList;
+                        Toastify({
+                            text: "Channel list updated"
+                        }).showToast();
+                        channelsUpdated = true;
+                    } else if (xhr.status === 403) {
+                        Toastify({
+                            text: "Credentials incorrect",
+                            className: "error"
+                        }).showToast();
+                        channelsUpdated = true;
+                    }
+                }
+            });
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById("messageInput").value;
+            console.log(messageInput)
+            if (messageInput) {
+                let xhr = new XMLHttpRequest();
+                xhr.open("POST", `http://localhost:9000/channels/send-message/${channel}`);
+                xhr.setRequestHeader("Accept", "application/json");
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.setRequestHeader("token", jwtToken);
+                const data = JSON.stringify({ message: messageInput });
+                console.log(data);
+                xhr.send(data);
+                let messageSent = false;
+                xhr.addEventListener('readystatechange', function () {
+                    if (messageSent === false) {
+                        const responseText = xhr.responseText;
+                        const statusCode = xhr.status;
+                        if (xhr.status === 201) {
+                            Toastify({
+                                text: "Message Sent",
+                                className: "error",
+                                style: {
+                                    background: "linear-gradient(to right, #00b09b, #96c93d)",
+                                }
+                            }).showToast();
+                            document.getElementById("messageInput").value = '';
+                            selectChannel(channel, false);
+                            messageSent = true;
+                        } else {
+                            Toastify({
+                                text: "Message failed to be delivered",
+                                className: "error",
+                            }).showToast();
+                        }
+                    }
+                });
+            }
+        }
+
+
+        function connectAudio() {
+            const constraints = {
+                'video': false,
+                'audio': true
+            }
+            //const promise = navigator.mediaDevices.getUserMedia(constraints);
+            const openMediaDevices = async (constraints) => {
+                return await navigator.mediaDevices.getUserMedia(constraints);
+            }
+            try {
+                const stream = openMediaDevices({'video':true,'audio':true});
+                console.log('Got MediaStream:', stream);
+                if (!ws) {
+                    console.log("Connect to ws");
+                    ws = new WebSocket("ws://localhost:9000/ws");
+                    ws.onopen = function(e) {
+                        alert("[OPEN] Connection established");
+                        socket.send("My name is John");
+                    };
+
+                    ws.onmessage = function(event) {
+                        alert(`[message] Data received from server: ${event.data}`);
+                    };
+
+                    ws.onclose = function(event) {
+                        if (event.wasClean) {
+                            alert(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+                        } else {
+                            // e.g. server process killed or network down
+                            // event.code is usually 1006 in this case
+                            alert('[close] Connection died');
+                        }
+                    };
+                    ws.onerror = function(error) {
+                       alert(`[error]`);
+                    };
+
+                }
+            } catch(error) {
+                console.error('Error accessing media devices.', error);
+            }
+            
         }
     </script>
 
